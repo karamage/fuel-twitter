@@ -12,7 +12,7 @@
 namespace Twitter;
 
 class Twitter_Connection {
-	
+
 	/**
 	 * Multi Curl
 	 */	
@@ -63,10 +63,14 @@ class Twitter_Connection {
 	 */
 	public function get($url, $params)
 	{
-		
-		$this->init_connection($url);
+		$get = "";
+		if(!empty($params['request'])){
+			$get = http_build_query($params['request'], '', '&');
+		}
+
+		$this->init_connection($url."?".$get);
 		$response = $this->add_curl($url, $params);
-	    
+
 	    return $response;
 	}
 	
@@ -79,9 +83,12 @@ class Twitter_Connection {
 	 */
 	public function post($url, $params)
 	{
-		$post = http_build_query($params['request'], '', '&');
+        $post = "";
+        if(!empty($params['request'])) {
+            $post = http_build_query($params['request'], '', '&');
+        }
 		
-		$this->init_connection($url, $params);
+		$this->init_connection($url);
 		curl_setopt($this->_ch, CURLOPT_POST, 1);
 		curl_setopt($this->_ch, CURLOPT_POSTFIELDS, $post);
 		
@@ -100,17 +107,28 @@ class Twitter_Connection {
 	protected function add_oauth_headers(&$ch, $url, $oauth_headers)
 	{
 		$_h = array('Expect:');
+        //$_h = array();
 		$url_parts = parse_url($url);
 		$oauth = 'Authorization: OAuth realm="' . $url_parts['path'] . '",';
-		
+        //$oauth = 'Authorization: OAuth ';
+
 		foreach ( $oauth_headers as $name => $value )
 		{
+            /*
+            if ($name == 'oauth_token') {
+                continue;
+            } else if ($name == 'oauth_callback') {
+                $value = urlencode($value);
+            }
+            */
 			$oauth .= "{$name}=\"{$value}\",";
 		}
 				
 		$_h[] = substr($oauth, 0, -1);
-		
+        //\Log::warning('header=' . var_export($_h, true));
+
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $_h);
+        //\Log::warning('ch=' . var_export($ch, true));
 	}
 	
 	/**
@@ -126,13 +144,19 @@ class Twitter_Connection {
 		{
 			$this->add_oauth_headers($this->_ch, $url, $params['oauth']);
 		}
-		
+
 		$ch = $this->_ch;
-		
+        $info = curl_getinfo($ch);
+        //\Log::warning('url=' . $url);
+        //\Log::warning('request info=' . var_export($info, true));
+
 		$key = (string) $ch;
+        //\Log::warning('key=' . $key);
 		$this->_requests[$key] = $ch;
-		
+
+        //\Log::warning('request=' . var_export($this->_requests[$key], true));
 		$response = curl_multi_add_handle($this->_mch, $ch);
+        //\Log::warning('response=' . var_export($response, true));
 
 		if ( $response === CURLM_OK or $response === CURLM_CALL_MULTI_PERFORM )
 		{
@@ -181,7 +205,9 @@ class Twitter_Connection {
 					
 					if ($response->__resp->code !== 200)
 					{
-						throw new \TwitterException(isset($response->__resp->data->error) ? $response->__resp->data->error : $response->__resp->data, $response->__resp->code);
+                        \Log::warning('response err code' . $response->__resp->code);
+                        \Log::warning('response err ' . var_export($response->__resp, true));
+						throw new \TwitterException(isset($response->__resp->data->error) ? $response->__resp->data->error : $response->__resp->data->errors[0]->message, $response->__resp->code);
 					}
 					
 					return $response;

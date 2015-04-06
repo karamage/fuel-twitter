@@ -4,6 +4,12 @@ A super simple Twitter package for Fuel.  This is based off of Elliot Haughin's 
 
 ## About
 
+* Version: 1.1.1
+* License: MIT License
+* Author: Masaaki Kakimoto
+* CI Library Author: Elliot Haughin
+* Original URL: [http://www.karamage.com](http://www.karamage.com)
+
 * Version: 1.0.1
 * License: MIT License
 * Author: Dan Horrigan
